@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDabaInstance } from "./daba/init";
+import { getDabaInstance } from "./daba";
 import "./App.css";
 
 const daba = getDabaInstance();
