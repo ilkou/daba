@@ -4,7 +4,7 @@ import "./App.css";
 
 const SOCKET_URL = "ws://localhost:8080/ws-daba";
 
-const daba = new Daba(SOCKET_URL, true);
+const daba = Daba.createInstance(SOCKET_URL, true);
 function App() {
   const [id, setId] = useState("");
   const [message, setMessage] = useState("");

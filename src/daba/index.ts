@@ -15,12 +15,26 @@ type DabaSub = {
  * Daba class
  */
 export default class Daba {
+  private static instance: Daba;
   private static subs: Array<DabaSub> = [];
   private static withLogs = false;
   private static isConnected = false;
   private static client: Client;
 
-  constructor(brokerURL: string, withLogs = false, conf?: StompConfig) {
+  private constructor() {}
+
+  /*
+   * public methods
+   */
+  public static createInstance(
+    brokerURL: string,
+    withLogs = false,
+    conf?: StompConfig
+  ): Daba {
+    if (Daba.instance) {
+      throw new Error("Daba is already initiated");
+    }
+    Daba.instance = new Daba();
     if (!brokerURL) {
       throw new Error("Daba: brokerURL is required");
     }
@@ -40,11 +54,15 @@ export default class Daba {
       });
       Daba.client.activate();
     }
+    return Daba.instance;
+  }
+  public static getInstance() {
+    if (!Daba.instance) {
+      throw new Error("Daba is not initiated");
+    }
+    return Daba.instance;
   }
 
-  /*
-   * public methods
-   */
   subscribe = (topic: string, callback: (message: any) => void): string => {
     const id = Math.random().toString(36).substring(7);
     let newSub: DabaSub = { id, topic, callback, isDone: false };
@@ -94,6 +112,5 @@ export default class Daba {
     if (Daba.withLogs) {
       console.log("Daba:", ...args);
     }
-    console.log(Daba.client);
   };
 }
