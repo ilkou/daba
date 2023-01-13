@@ -38,22 +38,17 @@ export default class Daba {
     if (!brokerURL) {
       throw new Error("Daba: brokerURL is required");
     }
-    if (Daba.isConnected && Daba.client.brokerURL !== brokerURL) {
-      throw new Error("Daba: cannot change brokerURL");
-    }
-    if (!Daba.isConnected) {
-      Daba.withLogs = withLogs;
-      Daba.client = new Client({
-        brokerURL,
-        reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
-        onConnect: Daba.onConnected,
-        onDisconnect: Daba.onDisconnected,
-        ...(conf || {}),
-      });
-      Daba.client.activate();
-    }
+    Daba.withLogs = withLogs;
+    Daba.client = new Client({
+      brokerURL,
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: Daba.onConnected,
+      onDisconnect: Daba.onDisconnected,
+      ...(conf || {}),
+    });
+    Daba.client.activate();
     return Daba.instance;
   }
   public static getInstance() {
