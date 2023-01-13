@@ -24,42 +24,23 @@ export default class Daba {
     if (!brokerURL) {
       throw new Error("Daba: brokerURL is required");
     }
-    Daba.withLogs = withLogs;
-    Daba.client = new Client({
-      brokerURL,
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-      onConnect: Daba.onConnected,
-      onDisconnect: Daba.onDisconnected,
-      ...(conf || {}),
-    });
-    Daba.client.activate();
-  }
-
-  /*
-   * private methods
-   */
-  private static onConnected() {
-    Daba.isConnected = true;
-    conditionalLog(Daba.withLogs, "Daba: connected");
-    Daba.subs = Daba.subs.map(Daba.finishSubWhenConnected);
-  }
-  private static onDisconnected() {
-    Daba.isConnected = false;
-    conditionalLog(Daba.withLogs, "Daba: disconnected");
-  }
-  private static finishSubWhenConnected = (sub: DabaSub) => {
-    if (Daba.isConnected && !sub.isDone) {
-      const { unsubscribe } = Daba.client.subscribe(sub.topic, (message) => {
-        conditionalLog(Daba.withLogs, "Daba: message received!");
-        sub.callback(message);
-      });
-      conditionalLog(Daba.withLogs, "Daba: trial succeed for id", sub.id);
-      return { ...sub, unsubscribe, isSubbed: true };
+    if (Daba.isConnected && Daba.client.brokerURL !== brokerURL) {
+      throw new Error("Daba: cannot change brokerURL");
     }
-    return sub;
-  };
+    if (!Daba.isConnected) {
+      Daba.withLogs = withLogs;
+      Daba.client = new Client({
+        brokerURL,
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        onConnect: Daba.onConnected,
+        onDisconnect: Daba.onDisconnected,
+        ...(conf || {}),
+      });
+      Daba.client.activate();
+    }
+  }
 
   /*
    * public methods
@@ -68,7 +49,7 @@ export default class Daba {
     const id = Math.random().toString(36).substring(7);
     let newSub: DabaSub = { id, topic, callback, isDone: false };
 
-    conditionalLog(Daba.withLogs, "Daba: new sub trial for id: ", id);
+    Daba.log("new sub trial for id {", id, "}");
     newSub = Daba.finishSubWhenConnected(newSub);
     Daba.subs.push(newSub);
     return id;
@@ -77,7 +58,7 @@ export default class Daba {
   unsubscribe = (id: string): string => {
     Daba.subs = Daba.subs.filter((sub: DabaSub) => {
       if (sub.id === id) {
-        conditionalLog(Daba.withLogs, "Daba: unsubscribing from id", sub.id);
+        Daba.log("unsubscribing from id {", sub.id, "}");
         sub.unsubscribe?.();
         return false;
       }
@@ -85,13 +66,34 @@ export default class Daba {
     });
     return "";
   };
-}
 
-/*
- * utility methods
- */
-const conditionalLog = (hasLog: boolean, ...args: any[]) => {
-  if (hasLog) {
-    console.log(...args);
+  /*
+   * private methods
+   */
+  private static onConnected() {
+    Daba.isConnected = true;
+    Daba.subs = Daba.subs.map(Daba.finishSubWhenConnected);
+    Daba.log("connected");
   }
-};
+  private static onDisconnected() {
+    Daba.isConnected = false;
+    Daba.log("disconnected");
+  }
+  private static finishSubWhenConnected = (sub: DabaSub) => {
+    if (Daba.isConnected && !sub.isDone) {
+      const { unsubscribe } = Daba.client.subscribe(sub.topic, (message) => {
+        Daba.log("message received: ", message);
+        sub.callback(message);
+      });
+      Daba.log("trial succeed for id {", sub.id, "}");
+      return { ...sub, unsubscribe, isSubbed: true };
+    }
+    return sub;
+  };
+  private static log = (...args: any[]) => {
+    if (Daba.withLogs) {
+      console.log("Daba:", ...args);
+    }
+    console.log(Daba.client);
+  };
+}

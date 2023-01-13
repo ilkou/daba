@@ -4,7 +4,7 @@ import "./App.css";
 
 const SOCKET_URL = "ws://localhost:8080/ws-daba";
 
-const daba = new Daba(SOCKET_URL);
+const daba = new Daba(SOCKET_URL, true);
 function App() {
   const [id, setId] = useState("");
   const [message, setMessage] = useState("");
@@ -20,11 +20,7 @@ function App() {
     return daba.unsubscribe(id);
   };
   const toggleSub = () => {
-    if (!!id) {
-      setId(unSub(id));
-    } else {
-      setId(sub());
-    }
+    setId(!!id ? unSub(id) : sub());
   };
   useEffect(() => {
     const currentId = sub();
